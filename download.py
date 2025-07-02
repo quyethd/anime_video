@@ -1,19 +1,55 @@
+﻿import os
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from youtubesearchpython import VideosSearch
 import yt_dlp
-import time
-import os
 
-# ====== CẤU HÌNH ======
+# Cấu hình chính
 MAX_VIDEOS = 1000
-QUERY = "Top Shorts funny of all time"
-OUTPUT_DIR = "downloads/video"
-DURATION_LIMIT = 30  # giây
-MIN_VIEWS = 10_000_000
+QUERIES = [
+    "Top Shorts funny of all time",
+    "funny short videos",
+    "viral youtube shorts",
+    "comedy shorts",
+    "tiktok funny compilation",
+    "try not to laugh shorts",
+    "funny fails 2025",
+    "shorts that make you laugh",
+    "tiktok fails short",
+    "funniest shorts 2025",
+    "funny moments compilation",
+    "short meme compilation",
+    "best funny shorts",
+    "laugh out loud shorts",
+    "hilarious moments in shorts",
+    "crazy funny shorts",
+    "funny animal shorts",
+    "funny kids shorts",
+    "baby funny shorts",
+    "funny reaction shorts",
+    "funny street interviews",
+    "unexpected funny shorts",
+    "best viral shorts",
+    "tiktok comedy shorts",
+    "shorts that went viral",
+    "top funny tiktok 2025",
+    "laughing challenge shorts",
+    "funny cooking shorts",
+    "funny gym fails short",
+    "funny school moments shorts"
+]
+DURATION_LIMIT = 30  # chỉ lấy video dưới 30 giây
+MIN_VIEWS = 1_000_000  # chỉ lấy video trên 1 triệu lượt xem
+OUTPUT_DIR = "downloads/shorts_funny"
+MAX_WORKERS = 4
 
+# Khởi tạo thư mục và biến toàn cục
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+video_links = set()
+downloaded_links = set()
+video_links_lock = threading.Lock()
 
-
-# ====== HÀM HỖ TRỢ ======
 def parse_views(view_text):
     view_text = view_text.lower().replace('views', '').strip()
     if 'k' in view_text:
@@ -38,66 +74,77 @@ def has_audio_stream(url):
             if fmt.get('vcodec') != 'none' and fmt.get('acodec') != 'none':
                 return True
     except Exception:
-        return False
+        pass
     return False
 
+def download_video(url):
+    global downloaded_links
+    if url in downloaded_links:
+        return
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+        'outtmpl': f'{OUTPUT_DIR}/%(title).100s [%(id)s].%(ext)s',
+        'merge_output_format': 'mp4',
+        'quiet': True,
+        'noplaylist': True,
+        'ignoreerrors': True,
+        'postprocessors': [{'key': 'FFmpegMetadata'}],
+    }
+    if not has_audio_stream(url):
+        print(f"⛔ Không có audio: {url}")
+        return
+    try:
+        print(f"⬇️ Đang tải: {url}")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        with video_links_lock:
+            downloaded_links.add(url)
+            print(f"✅ Đã tải: {url} | Tổng: {len(downloaded_links)}/{MAX_VIDEOS}")
+    except Exception as e:
+        print(f"⚠️ Lỗi tải {url}: {e}")
 
-# ====== TÌM KIẾM VIDEO ĐỦ ĐIỀU KIỆN ======
-qualified_links = []
-search = VideosSearch(QUERY, limit=20)
-
-print(f"🔍 Bắt đầu tìm video phù hợp (<{DURATION_LIMIT}s, ≥10tr view)...")
-
-while len(qualified_links) < MAX_VIDEOS:
-    results = search.result()
-    for video in results['result']:
-        try:
-            views = parse_views(video['viewCount']['short'])
-            duration = parse_duration(video['duration'])
-            if views >= MIN_VIEWS and duration < DURATION_LIMIT:
-                link = video['link']
-                if link not in qualified_links:
-                    qualified_links.append(link)
-                    print(f"✔️  {link} | {views:.0f} views | {duration}s")
-        except Exception:
-            continue
-
-    if not search.hasNextPage:
-        break
-
-    search.next()
-    time.sleep(1)
-
-print(f"\n🎯 Tổng số video đủ điều kiện: {len(qualified_links)}")
-
-
-# ====== CẤU HÌNH TẢI VIDEO ======
-ydl_opts = {
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-    'outtmpl': f'{OUTPUT_DIR}/%(title).100s [%(id)s].%(ext)s',
-    'merge_output_format': 'mp4',
-    'quiet': False,
-    'noplaylist': True,
-    'ignoreerrors': True,
-    'postprocessors': [{
-        'key': 'FFmpegMetadata'
-    }],
-}
-
-
-# ====== TẢI VIDEO ======
-print("\n📥 Bắt đầu tải video...")
-
-with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    for i, url in enumerate(qualified_links[:MAX_VIDEOS], start=1):
-        print(f"\n➡️ [{i}/{MAX_VIDEOS}] Tải: {url}")
-        if has_audio_stream(url):
+def search_videos():
+    print("🔍 Bắt đầu tìm video...")
+    while len(downloaded_links) < MAX_VIDEOS:
+        for query in QUERIES:
             try:
-                ydl.download([url])
+                search = VideosSearch(query, limit=50)
+                results = search.result().get('result', [])
+                for video in results:
+                    try:
+                        link = video['link']
+                        views = parse_views(video['viewCount']['short'])
+                        duration = parse_duration(video['duration'])
+                        if views >= MIN_VIEWS and duration < DURATION_LIMIT:
+                            with video_links_lock:
+                                if link not in video_links and link not in downloaded_links:
+                                    video_links.add(link)
+                                    print(f"🎯 Tìm thấy: {len(video_links)} | Đã tải: {len(downloaded_links)}")
+                    except:
+                        continue
+                time.sleep(1)
             except Exception as e:
-                print(f"⚠️  Lỗi: {e}")
-        else:
-            print("⛔ Bỏ qua: không có audio")
+                print(f"❌ Lỗi tìm kiếm với từ khóa '{query}': {e}")
+                time.sleep(5)
+            if len(downloaded_links) >= MAX_VIDEOS:
+                break
 
+def main():
+    try:
+        search_thread = threading.Thread(target=search_videos)
+        search_thread.start()
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            while len(downloaded_links) < MAX_VIDEOS:
+                with video_links_lock:
+                    links_to_download = list(video_links - downloaded_links)
+                for link in links_to_download:
+                    executor.submit(download_video, link)
+                time.sleep(5)
+        search_thread.join()
+        print(f"\n🎉 Đã tải xong {len(downloaded_links)} video.")
+    except KeyboardInterrupt:
+        print("\n⛔ Đã dừng bởi người dùng (Ctrl + C).")
+        print(f"📦 Đã tải được {len(downloaded_links)} video trước khi thoát.")
 
-print("\n✅ HOÀN TẤT.")
+if __name__ == "__main__":
+    main()
