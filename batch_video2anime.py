@@ -2,7 +2,7 @@ import os
 import subprocess
 
 # Đường dẫn thư mục chứa video
-input_dir = "1_Video"
+input_dir = "downloads/video"
 output_dir = "output/results"
 model_path = "deploy/AnimeGANv3_Hayao_36.onnx"
 
