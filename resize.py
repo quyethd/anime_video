@@ -4,8 +4,8 @@ from moviepy.video.fx.resize import resize
 from moviepy.video.fx.crop import crop
 
 # Cấu hình đường dẫn
-input_folder = r"D:\4_AI\AnimeGANv3\output\1_dance"
-output_folder = r"D:\4_AI\AnimeGANv3\output\1_dance_final"
+input_folder = r"D:\3_AI\anime_video\output\results"
+output_folder = r"D:\3_AI\anime"
 
 os.makedirs(output_folder, exist_ok=True)
 
