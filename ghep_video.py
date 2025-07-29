@@ -10,15 +10,15 @@ pygame.init()
 text_list = [
     "Bạn chọn ai?", "Real vs Anime – Ai nhảy cuốn hơn?", "So kè từng bước nhảy!",
     "2 thế giới – 1 trend!", "Người thật hay nhân vật anime chất hơn?", "Ai nhảy giống idol hơn?",
-    "Đối đầu không khoan nhượng!", "Ai làm bạn phải xem lại 3 lần?", "Đọ dáng cực gắt 🔥",
-    "Tưởng tượng vs thực tế 😱", "Pick your side!", "Ai làm bạn thả tim?", "So sánh không hồi kết!",
+    "Đối đầu không khoan nhượng!", "Ai làm bạn phải xem lại 3 lần?", "Đọ dáng cực gắt",
+    "Tưởng tượng vs thực tế", "Pick your side!", "Ai làm bạn thả tim?", "So sánh không hồi kết!",
     "Người thật liệu có thua anime?", "Vũ đạo đỉnh cao – bạn vote ai?", "Động tác nào mượt hơn?",
     "Ai đang lên trend đây?", "Ai hút mắt hơn?", "Thế giới thật vs thế giới ảo!", "Vibe ai chất hơn?",
     "Cú xoay nào chất hơn?", "Bước nhảy nào viral hơn?", "Ai khiến bạn replay?", "So kè từng frame!",
     "Không thể rời mắt!", "Bạn thích kiểu nào hơn?", "So với idol bạn sẽ chọn?",
     "Đây là nhảy hay hóa phép?", "Như trong mơ hay đời thật?", "Vừa cute vừa cháy!",
     "Bạn pick real hay anime?", "Combo thần sầu!", "Chuyển động nào mượt hơn?",
-    "Chọn trong 3 giây!", "Khó chọn thật sự 😳", "Chọn 1 bên, đừng do dự!", "Trend này ai thắng?",
+    "Chọn trong 3 giây!", "Khó chọn thật sự ?", "Chọn 1 bên, đừng do dự!", "Trend này ai thắng?",
     "2 phiên bản – 1 linh hồn", "Bạn nghiêng về ai?", "Không phải ai cũng làm được!",
     "Động tác đỉnh của chóp!", "Cảnh này bạn thích bên nào?", "Khớp đến từng mili giây!",
     "Visual ai ăn điểm hơn?", "Ai khiến bạn phải Wow?", "Sánh ngang idol Nhật?", "Mlem nhất hôm nay?",
@@ -26,10 +26,10 @@ text_list = [
 ]
 
 # 🔍 Thư mục
-left_folder = r"D:\3_AI\0_Video\1_dance"
-right_folder = r"D:\3_AI\0_Video\1_dance_anime"
-output_folder = r"D:\3_AI\0_Video\1_dance_merge"
-font_path = r"D:\3_AI\anime_video\font\NotoSans-VariableFont_wdth,wght.ttf"
+left_folder = r"D:\4_AI\AnimeGANv3\output\phoid_oxinh"
+right_folder = r"D:\4_AI\AnimeGANv3\downloads\phoid_oxinh"
+output_folder = r"D:\4_AI\AnimeGANv3\output\phoid_oxinh_merge"
+font_path = r"D:\4_AI\AnimeGANv3\font\NotoSans-VariableFont_wdth,wght.ttf"
 os.makedirs(output_folder, exist_ok=True)
 
 def render_text_to_image(text, font_path, font_size=65):
@@ -94,7 +94,7 @@ for filename in os.listdir(left_folder):
             img_start = render_text_to_image(start_text, font_path, font_size=75)
             txt_start_clip = (
                 ImageClip(img_start)
-                .set_duration(4)
+                .set_duration(3)
                 .set_position(("center", "top"))
                 .fadein(0.5)
                 .fadeout(0.5)
@@ -105,11 +105,11 @@ for filename in os.listdir(left_folder):
             img_end = render_text_to_image("Bạn chọn ai? Comment nhé", font_path, font_size=75)
             txt_end_clip = (
                 ImageClip(img_end)
-                .set_duration(4)
+                .set_duration(3)
                 .set_position(("center", "bottom"))
                 .fadein(0.5)
                 .fadeout(0.5)
-                .set_start(combined_clip.duration - 4)
+                .set_start(combined_clip.duration - 3)
             )
 
             # 🧩 Kết hợp video và text

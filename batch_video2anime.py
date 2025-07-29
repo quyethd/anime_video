@@ -2,9 +2,9 @@ import os
 import subprocess
 
 # Đường dẫn thư mục chứa video
-input_dir = "downloads/shorts_funny"
-output_dir = "output/results"
-model_path = "deploy/AnimeGANv3_Hayao_36.onnx"
+input_dir = "downloads/phoid_oxinh"
+output_dir = "output/phoid_oxinh"
+model_path = "deploy/AnimeGANv3_Shinkai_37.onnx"
 
 # Tạo thư mục output nếu chưa có
 os.makedirs(output_dir, exist_ok=True)

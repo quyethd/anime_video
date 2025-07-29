@@ -1,18 +1,56 @@
 import os
-from moviepy.editor import VideoFileClip
+import numpy as np
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
 from moviepy.video.fx.resize import resize
-from moviepy.video.fx.crop import crop
+from PIL import Image, ImageFilter, ImageEnhance
 
-# Cấu hình đường dẫn
-input_folder = r"D:\3_AI\anime_video\output\results"
-output_folder = r"D:\3_AI\anime"
-
+# ======== Thư mục ============
+input_folder = r"D:\4_AI\AnimeGANv3\output\phoid_oxinh_merge"
+output_folder = r"D:\4_AI\AnimeGANv3\output\phoid_oxinh_tiktok"
 os.makedirs(output_folder, exist_ok=True)
 
+# ======== Kích thước chuẩn TikTok ============
 tiktok_width = 1080
 tiktok_height = 1920
-tiktok_ratio = 9 / 16
+tiktok_ratio = tiktok_width / tiktok_height
 
+
+# ======== Hàm tạo nền mờ + tối đi ============
+def make_blurred_background(clip):
+    # Lấy frame đầu tiên
+    frame = clip.get_frame(5)
+    img = Image.fromarray(frame)
+
+    # Resize nền sao cho phủ toàn khung TikTok
+    img_ratio = img.width / img.height
+    if img_ratio > tiktok_ratio:
+        new_height = tiktok_height
+        new_width = int(new_height * img_ratio)
+    else:
+        new_width = tiktok_width
+        new_height = int(new_width / img_ratio)
+
+    img = img.resize((new_width, new_height))
+
+    # Làm mờ
+    blurred = img.filter(ImageFilter.GaussianBlur(radius=15))
+
+    # Giảm độ sáng (darken)
+    enhancer = ImageEnhance.Brightness(blurred)
+    darkened = enhancer.enhance(0.6)  # 0.6 = giảm 40% độ sáng
+
+    # Cắt về đúng kích thước TikTok
+    left = (darkened.width - tiktok_width) // 2
+    top = (darkened.height - tiktok_height) // 2
+    cropped = darkened.crop((left, top, left + tiktok_width, top + tiktok_height))
+
+    # Chuyển về clip
+    bg_array = np.array(cropped)
+    bg_clip = ImageClip(bg_array).set_duration(clip.duration)
+    return bg_clip
+
+
+# ======== Xử lý từng video ============
 for filename in os.listdir(input_folder):
     if filename.lower().endswith((".mp4", ".mov", ".avi", ".mkv")):
         input_path = os.path.join(input_folder, filename)
@@ -21,30 +59,34 @@ for filename in os.listdir(input_folder):
         print(f"🎬 Đang xử lý: {filename}")
         try:
             clip = VideoFileClip(input_path)
+            duration = clip.duration
 
-            # Thay vì crop phần trên dưới, giữ nguyên video gốc
-            # cropped = crop(clip, y1=70, y2=clip.h - 100)
-            processed_clip = clip  # Giữ nguyên
+            # Tạo nền blur + darken
+            bg = make_blurred_background(clip)
 
-            # Resize + pad để đạt 1080x1920 (9:16)
-            cropped_ratio = processed_clip.w / processed_clip.h
-            if abs(cropped_ratio - tiktok_ratio) > 0.01:
-                # Resize chiều cao trước
-                resized = resize(processed_clip, height=tiktok_height)
-
-                # Nếu rộng quá, crop ngang
-                if resized.w > tiktok_width:
-                    x_center = resized.w // 2
-                    final = crop(resized, x1=x_center - tiktok_width // 2, x2=x_center + tiktok_width // 2)
-                else:
-                    # Nếu chưa đủ rộng, pad viền
-                    final = resized.on_color(size=(tiktok_width, tiktok_height), color=(0, 0, 0), col_opacity=1)
+            # Resize foreground sao cho vừa màn (giữ nguyên nội dung)
+            original_ratio = clip.w / clip.h
+            if original_ratio > tiktok_ratio:
+                fg = resize(clip, width=tiktok_width)
             else:
-                # Nếu đã đúng tỷ lệ, chỉ resize
-                final = resize(processed_clip, width=tiktok_width, height=tiktok_height)
+                fg = resize(clip, height=tiktok_height)
+
+            fg = fg.set_position(("center", "center")).set_duration(duration)
+
+            # Ghép nền và foreground
+            final = CompositeVideoClip([bg, fg], size=(tiktok_width, tiktok_height))
+            final = final.set_duration(duration)
 
             # Xuất video
-            final.write_videofile(output_path, codec="libx264", audio_codec="aac", bitrate="2000k", fps=30)
+            final.write_videofile(
+                output_path,
+                codec="libx264",
+                audio_codec="aac",
+                bitrate="3000k",
+                fps=30,
+                preset="medium"
+            )
+
             print(f"✅ Đã lưu: {output_path}")
 
         except Exception as e:

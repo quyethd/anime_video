@@ -2,7 +2,7 @@ import os
 from moviepy.editor import VideoFileClip
 
 # Cấu hình
-input_folder = r"D:\4_AI\AnimeGANv3\output\1_dance_final"
+input_folder = r"D:\4_AI\AnimeGANv3\output\phoid_oxinh_tiktok"
 
 def is_shorts_format(clip):
     width, height = clip.size
